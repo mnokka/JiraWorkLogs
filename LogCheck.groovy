@@ -112,23 +112,26 @@ Query getQuery(QueryCreationContext queryCreationContext, FunctionOperand operan
 	try{
 			
 	
-			log.debug("Issue: ${issue}")
+			
 
 
 			def alllogs=worklogManager.getByIssue(issue)
 			def numberoflogs=alllogs.size()
 			
-			mylogger.debug("alllogs: $alllogs")
-			mylogger.debug("numberoflogs: $numberoflogs")
+			//mylogger.debug("alllogs: $alllogs")
+			//mylogger.debug("numberoflogs: $numberoflogs")
 			
 			
-			if (numberoflogs > 5) {
-				 log.debug("HIT. Adding to query results")
+			if (numberoflogs > 50) {
+			
+				 mylogger.debug("********* HIT. Adding to query results")
+				 mylogger.debug("numberoflogs: $numberoflogs")
+				 mylogger.debug("Issue: ${issue}")
 				 booleanQuery.add(new TermQuery(new Term("issue_id", issue.id as String)), BooleanClause.Occur.SHOULD)
 				}
 			
 			else {
-				log.debug("LOW value, not used")
+				mylogger.debug("LOW value, not used")
 				
 			}
 	
