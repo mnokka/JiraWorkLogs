@@ -7,9 +7,10 @@
 //
 //
 // Use Admin panel: Script Runner / Script JQL Functions /  scan (in the middle of the text)
-// this fucntion should be found and added to list , for each iteration, buggy code will be dropped
+// this fucntion should be found and added to list , use scan operation also after each code chage
 //
-// JQL USAGE: issueFunction in LogCheck("Project=XXX")
+// JQL USAGE: issueFunction in LogCheck("Project=XXX","100")    Finds all project XXX issues with >100 work logs
+// JQL USAGE: issueFunction in LogCheck("Project=\"XXX AAA BBB\"","100")    Finds all project "XXX AAA BBB" issues with >100 work logs
 
 
 
@@ -60,17 +61,16 @@ import com.atlassian.jira.issue.CustomFieldManager
 class LogCheck extends AbstractScriptedJqlFunction implements JqlQueryFunction{
 	@Override
 	String getDescription() {
-	"Function to find out issues with >999 work log entries"
+	"Find out issues with given number of work log entries. Example "
 
 	}
 
 @Override
 	List<Map> getArguments() {
 [
-[
-		"description": "Subquery",
-		"optional": false,
-	]
+	[description: "Subquery",optional: false,],
+	[description: "Count",optional: false,]
+	
 ]
 }
 
@@ -78,6 +78,7 @@ class LogCheck extends AbstractScriptedJqlFunction implements JqlQueryFunction{
 String getFunctionName() {
 "LogCheck"
 }
+
 
 def String subquery
 //@Override
@@ -89,44 +90,34 @@ return messageSet
 @Override
 Query getQuery(QueryCreationContext queryCreationContext, FunctionOperand operand, TerminalClause terminalClause) {
 	def mylogger = Logger.getLogger("LogCheck") // change for customer system
-	mylogger.setLevel(Level.DEBUG) // was DEBUG
+	mylogger.setLevel(Level.INFO) // was DEBUG
 	CustomFieldManager customFieldManager = ComponentAccessor.getCustomFieldManager()
-	mylogger.info("LogCheck JQL extension started")
+	mylogger.info("****** LogCheck JQL extension started ***********")
 	
 
 	JiraAuthenticationContext context = ComponentAccessor.getJiraAuthenticationContext();
 	ApplicationUser applicationUser = context.getUser();
-	mylogger.info("Lxxxxxxxxxxxxxxxxxxx")
-	mylogger.debug("goint ot ask issues")
+
 	issues = getIssues(operand.args[0], applicationUser)
-	//mylogger.debug("issues: $issues")
+	int counter=operand.args[1].toInteger()
 	
 	def worklogManager = ComponentAccessor.worklogManager
 	def issueManager = ComponentAccessor.issueManager
 	
 	BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
-	
-	log.debug("query doine")
+
 	issues.each {Issue issue ->
 	
 	try{
 			
-	
-			
-
-
 			def alllogs=worklogManager.getByIssue(issue)
-			def numberoflogs=alllogs.size()
+			def numberoflogs=alllogs.size()	
+	
+			if (numberoflogs > counter) {
 			
-			//mylogger.debug("alllogs: $alllogs")
-			//mylogger.debug("numberoflogs: $numberoflogs")
-			
-			
-			if (numberoflogs > 50) {
-			
-				 mylogger.debug("********* HIT. Adding to query results")
-				 mylogger.debug("numberoflogs: $numberoflogs")
-				 mylogger.debug("Issue: ${issue}")
+				 mylogger.debug("********* HIT. Adding to query results ***************")
+				 mylogger.info("WorkLogs: $numberoflogs   ${issue.key}")
+				 mylogger.debug("******************************************************")
 				 booleanQuery.add(new TermQuery(new Term("issue_id", issue.id as String)), BooleanClause.Occur.SHOULD)
 				}
 			
@@ -142,7 +133,7 @@ Query getQuery(QueryCreationContext queryCreationContext, FunctionOperand operan
 	}
 }
 
-log.info("LogCheck JQL extension finished")
+mylogger.info("***** LogCheck JQL extension finished ************")
 return booleanQuery.build();
 }
 
